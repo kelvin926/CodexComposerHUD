@@ -1,5 +1,6 @@
 #import <Cocoa/Cocoa.h>
 #include <string.h>
+#include <stdio.h>
 #import "AutoSetup.h"
 
 @interface HudDelegate : NSObject <NSApplicationDelegate>
@@ -46,11 +47,20 @@
 int main(int argc, const char **argv) {
     @autoreleasepool {
         NSString *root = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"hud"];
-        if(argc>1&&(strcmp(argv[1],"--install-auto")==0||strcmp(argv[1],"--remove-auto")==0))return HudConfigureAutomatic(strcmp(argv[1],"--install-auto")==0,NULL)?0:1;
+        if([[[NSBundle mainBundle] objectForInfoDictionaryKey:@"HUDLaunchProxy"] boolValue])root=[[NSBundle mainBundle] objectForInfoDictionaryKey:@"HUDProgramRoot"];
+        if(argc==3&&strcmp(argv[1],"--create-launch-proxy")==0){NSString *proxy=HudCreateLaunchProxy([NSString stringWithUTF8String:argv[2]],NULL);if(!proxy)return 1;puts([NSURL URLWithString:proxy].path.UTF8String);return 0;}
         if (argc > 1 && strcmp(argv[1], "--check-bundle") == 0) {
             BOOL ok = [[NSFileManager defaultManager] isExecutableFileAtPath:[root stringByAppendingPathComponent:@"runtime/node"]] && [[NSFileManager defaultManager] fileExistsAtPath:[root stringByAppendingPathComponent:@"launcher-macos.mjs"]];
             return ok ? 0 : 1;
         }
+        if([[[NSBundle mainBundle] objectForInfoDictionaryKey:@"HUDLaunchProxy"] boolValue]) {
+            NSTask *launch=[NSTask new];launch.executableURL=[NSURL fileURLWithPath:[root stringByAppendingPathComponent:@"runtime/node"]];
+            NSMutableArray *args=[NSMutableArray arrayWithObjects:[root stringByAppendingPathComponent:@"launcher-macos.mjs"],@"--app-args",nil];
+            for(int i=1;i<argc;i++)if(strncmp(argv[i],"-psn_",5)!=0)[args addObject:[NSString stringWithUTF8String:argv[i]]];
+            launch.arguments=args;launch.standardOutput=[NSFileHandle fileHandleWithNullDevice];launch.standardError=[NSFileHandle fileHandleWithNullDevice];
+            return [launch launchAndReturnError:NULL]?0:1;
+        }
+        if(argc>1&&(strcmp(argv[1],"--install-auto")==0||strcmp(argv[1],"--remove-auto")==0))return HudConfigureAutomatic(strcmp(argv[1],"--install-auto")==0,NULL)?0:1;
         NSApplication *app = [NSApplication sharedApplication];
         [app setActivationPolicy:NSApplicationActivationPolicyRegular];
         HudDelegate *delegate = [[HudDelegate alloc] init]; app.delegate = delegate; [app run];

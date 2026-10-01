@@ -12,10 +12,10 @@ OpenAI 공식 제품이나 공식 확장 기능이 아닙니다. 앱 파일을 �
 | --- | --- |
 | macOS 13.5+ Apple Silicon | `CodexComposerHUD-macOS-arm64.pkg` 또는 앱 ZIP |
 | Windows 10/11 x64 | `CodexComposerHUD-Setup.exe` 또는 `CodexComposerHUD.zip` |
-| Ubuntu 24.04 Intel/AMD | `codex-composer-hud_1.6.1-1_amd64.deb` |
-| Ubuntu 24.04 ARM64 | `codex-composer-hud_1.6.1-1_arm64.deb` |
+| Ubuntu 24.04 Intel/AMD | `codex-composer-hud_1.6.2-1_amd64.deb` |
+| Ubuntu 24.04 ARM64 | `codex-composer-hud_1.6.2-1_arm64.deb` |
 
-생성한 앱 아이콘이 Windows 실행 파일, 설치 화면, Ubuntu 앱 메뉴와 Mac 앱에 포함됩니다.
+생성한 앱 아이콘은 Codex Composer HUD 자체 실행 파일과 설치 화면에 사용됩니다. 공식 Codex/ChatGPT 바로가기와 Dock 항목은 원래 앱 아이콘을 유지합니다. HUD는 Codex 작업 입력창에만 표시되며 Chat 모드에서는 표시되지 않습니다.
 
 Node 런타임이 포함되어 별도 Node 설치가 필요하지 않습니다. SHA-256 파일도 함께 제공합니다. 설치 파일에는 GitHub 빌드 서명과 검증용 번들이 제공됩니다. Windows Authenticode와 Apple Developer ID 서명은 아직 없습니다. [서명 정책](docs/SIGNING.md)을 참고하세요.
 
@@ -26,13 +26,13 @@ Windows는 설치 파일을 실행하세요. 기본 선택인 자동 연결은 �
 Ubuntu는 공식 ChatGPT Linux 앱을 먼저 설치하고 로그인한 뒤 다음 명령을 사용합니다. ARM64 컴퓨터는 해당 파일명을 사용합니다.
 
 ```bash
-sudo apt install ./codex-composer-hud_1.6.1-1_amd64.deb
+sudo apt install ./codex-composer-hud_1.6.2-1_amd64.deb
 codex-composer-hud
 ```
 
 연결된 Codex 바로가기를 사용하면 표시기가 함께 적용됩니다. 일반 실행으로 이미 열린 앱에는 연결 포트가 없을 수 있으므로 작업을 마친 뒤 완전히 종료하고 연결된 바로가기로 다시 엽니다. 현재 작업을 강제로 종료하지 않습니다. 공식 앱 파일은 수정하지 않습니다.
 
-실행 파일을 직접 실행하거나 다른 도구에서 우회 실행하면 자동 연결이 적용되지 않을 수 있습니다. Ubuntu는 첫 로그인 또는 표시기 첫 실행 때 개인 앱 메뉴 항목을 연결합니다. Mac은 개인 LaunchAgent와 기존 Codex Dock 항목을 연결합니다.
+실행 파일을 직접 실행하거나 다른 도구에서 우회 실행하면 자동 연결이 적용되지 않을 수 있습니다. Ubuntu는 첫 로그인 또는 표시기 첫 실행 때 개인 앱 메뉴 항목을 연결합니다. Mac은 개인 LaunchAgent와 기존 Codex Dock 항목을 연결하며, 개인 실행 중계 앱에 공식 앱의 원본 아이콘을 복사해 유지합니다. 원본 아이콘을 보존할 수 없는 경우 Dock 항목은 바꾸지 않습니다.
 
 자세한 사용법: [Windows](docs/windows.md), [Ubuntu](docs/ubuntu.md), [macOS](docs/macos.md). Ubuntu에는 입력창이 있는 데스크톱 앱이 필요합니다.
 

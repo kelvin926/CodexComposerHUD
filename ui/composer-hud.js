@@ -1,8 +1,8 @@
 (() => {
   'use strict';
-  if (window.__codexComposerHUD?.version === '1.6.1') { window.__codexComposerHUD.remount(); return 'already-mounted'; }
+  if (window.__codexComposerHUD?.version === '1.6.2') { window.__codexComposerHUD.remount(); return 'already-mounted'; }
   window.__codexComposerHUD?.dispose();
-  const VERSION = '1.6.1';
+  const VERSION = '1.6.2';
   const hosts = new Map(), pending = new Map(), threads = new Map(), quotas = new Map(), quotaRequests = new Map();
   const configs = new Map();
   const metrics = window.__codexHUDMetrics;
@@ -310,9 +310,12 @@
   function mount() {
     if (disposed) return;
     let primary = null;
+    const visibleFooters = new Set();
     for (const editor of document.querySelectorAll('[data-codex-composer="true"], [contenteditable="true"][data-composer-markdown]')) {
+      if (editor.getAttribute('data-codex-composer') !== 'true' && !editor.closest('[data-codex-composer-root]')) continue;
       const rect = editor.getBoundingClientRect(); if (!rect.width || !rect.height) continue;
       const footer = editor.closest('[data-composer-footer-responsive]'); if (!footer) continue;
+      visibleFooters.add(footer);
       const gridCell = Array.from(footer.children).at(-1);
       const actionRow = gridCell?.querySelector(':scope > .flex') || gridCell;
       const toolbar = actionRow?.querySelector(':scope > .flex-1') || actionRow;
@@ -331,7 +334,7 @@
     }
     const next = primary ? active(primary) : null;
     if (key(next) !== key(selected)) select(next);
-    for (const item of hosts.values()) if (!item.host.isConnected) { close(item); item.resizeObserver.disconnect(); hosts.delete(item.host); }
+    for (const item of hosts.values()) if (!item.host.isConnected || !visibleFooters.has(item.host.closest('[data-composer-footer-responsive]'))) { close(item); item.resizeObserver.disconnect(); item.host.remove(); hosts.delete(item.host); }
     render();
   }
   const observer = new MutationObserver(records => {

@@ -9,8 +9,8 @@ using System.Reflection;
 [assembly: AssemblyTitle("Codex Composer HUD")]
 [assembly: AssemblyProduct("Codex Composer HUD")]
 [assembly: AssemblyCompany("Codex Composer HUD contributors")]
-[assembly: AssemblyVersion("1.6.1.0")]
-[assembly: AssemblyFileVersion("1.6.1.0")]
+[assembly: AssemblyVersion("1.6.2.0")]
+[assembly: AssemblyFileVersion("1.6.2.0")]
 
 internal static class Launcher {
     [STAThread]

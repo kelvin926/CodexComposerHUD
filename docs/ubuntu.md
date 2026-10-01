@@ -11,10 +11,10 @@ Ubuntu 24.04 데스크톱용 사용량 표시기입니다. 공식 Linux ChatGPT 
 ## 설치와 실행
 
 ```bash
-sudo apt install ./codex-composer-hud_1.6.1-1_amd64.deb
+sudo apt install ./codex-composer-hud_1.6.2-1_amd64.deb
 ```
 
-ARM64 컴퓨터는 파일명만 `codex-composer-hud_1.6.1-1_arm64.deb`로 바꿉니다. 앱 메뉴에서 **Codex Composer HUD**를 실행합니다. 터미널에서는 다음을 사용합니다.
+ARM64 컴퓨터는 파일명만 `codex-composer-hud_1.6.2-1_arm64.deb`로 바꿉니다. 앱 메뉴에서 **Codex Composer HUD**를 실행합니다. 터미널에서는 다음을 사용합니다.
 
 ```bash
 codex-composer-hud

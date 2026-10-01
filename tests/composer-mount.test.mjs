@@ -12,8 +12,9 @@ class Node {
   prepend(node) { node.remove(); this.children.unshift(node); node.parentElement = this; }
   remove() { if (this.parentElement) this.parentElement.children = this.parentElement.children.filter(n => n !== this); this.parentElement = null; }
   get isConnected() { return this.kind === 'document' || Boolean(this.parentElement?.isConnected); }
+  getAttribute(name) { return name === 'data-codex-composer' && this.kind === 'editor' && !this.chat ? 'true' : null; }
   getBoundingClientRect() { return {width: 500, height: 28}; }
-  closest(selector) { if (selector === footerSelector && this.kind === 'footer') return this; return this.parentElement?.closest(selector) || null; }
+  closest(selector) { if (selector === footerSelector && this.kind === 'footer' || selector === '[data-codex-composer-root]' && this.codexRoot) return this; return this.parentElement?.closest(selector) || null; }
   contains(node) { return this === node || this.children.some(child => child.contains(node)); }
   querySelector(selector) {
     return this.children.find(node => selector === ':scope > .flex' ? node.kind === 'row' : selector === ':scope > .flex-1' && node.kind === 'toolbar') || null;
@@ -25,7 +26,7 @@ function fixture(count = 1) {
   for (let i = 0; i < count; i++) {
     const footer = new Node('footer'), editor = new Node('editor'), cell = new Node('cell'), row = new Node('row'), toolbar = new Node('toolbar');
     document.prepend(footer); footer.prepend(cell); footer.prepend(editor); cell.prepend(row);
-    editors.push(editor); layouts.push({footer, row, toolbar});
+    editors.push(editor); layouts.push({footer, row, toolbar, editor});
   }
   document.querySelectorAll = () => editors;
   const makeHost = toolbar => {
@@ -65,4 +66,22 @@ test('separate composers each retain their own HUD', () => {
     assert.equal(footer.querySelectorAll().length, 1);
     assert.equal(footer.querySelectorAll()[0].parentElement, toolbar);
   }
+});
+
+test('a shared Chat composer never receives a Codex HUD', () => {
+  const f = fixture(); f.layouts[0].editor.chat = true; f.mount();
+  assert.equal(f.hosts.size, 0);
+});
+
+test('switching from Codex to Chat removes the retained HUD', () => {
+  const f = fixture(); f.mount(); const item = [...f.hosts.values()][0];
+  f.layouts[0].editor.chat = true; f.mount();
+  assert.equal(f.hosts.size, 0); assert.equal(item.host.isConnected, false);
+  assert.equal(item.disconnected, true);
+});
+
+test('a Codex root still identifies a compact editor without its native marker', () => {
+  const f = fixture(); const {editor, footer} = f.layouts[0];
+  editor.chat = true; footer.codexRoot = true; f.mount();
+  assert.equal(f.hosts.size, 1);
 });

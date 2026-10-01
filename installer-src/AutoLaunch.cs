@@ -35,30 +35,62 @@ internal static class AutoLaunch {
     private static object Open(object shell, string file) { return shell.GetType().InvokeMember("CreateShortcut", BindingFlags.InvokeMethod, null, shell, new object[] { file }); }
     private static string Get(object link, string name) { return Convert.ToString(link.GetType().InvokeMember(name, BindingFlags.GetProperty, null, link, null)); }
     private static void Set(object link, string name, string value) { link.GetType().InvokeMember(name, BindingFlags.SetProperty, null, link, new object[] { value }); }
+    private static bool Native(string target) { return Regex.IsMatch(target, @"\\OpenAI\.Codex_[^\\]+\\app\\(?:ChatGPT|Codex)\.exe$", RegexOptions.IgnoreCase); }
+    private static string NativeIcon(string icon, string originalTarget) {
+        return icon.Split(',')[0].Trim().Length == 0 ? originalTarget + ",0" : icon;
+    }
+    private static string NativeTarget(object shell, Dictionary<string, string> rows) {
+        foreach (string backup in rows.Values) {
+            if (!Regex.IsMatch(backup, @"^[0-9a-f]{64}\.lnk$")) continue;
+            string file = Path.Combine(StateRoot, backup); if (!File.Exists(file)) continue;
+            object link = Open(shell, file);
+            try { string target = Get(link, "TargetPath"); if (Native(target) && File.Exists(target)) return target; }
+            finally { Marshal.FinalReleaseComObject(link); }
+        }
+        return null;
+    }
     internal static void Enable(string root) {
         root = InstallSupport.ResolveRoot(root); InstallSupport.AssertOwned(root); Directory.CreateDirectory(StateRoot);
         Dictionary<string, string> rows = ReadManifest(); string target = Path.Combine(root, "Codex Composer HUD.exe");
         object shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell"));
         try {
+            string nativeTarget = NativeTarget(shell, rows);
             HashSet<string> visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (string folder in Folders) foreach (string file in Links(folder)) {
                 if (!Allowed(file) || !visited.Add(file)) continue;
                 object link = Open(shell, file);
                 try {
                     string originalTarget = Get(link, "TargetPath");
-                    if (!Regex.IsMatch(originalTarget, @"\\OpenAI\.Codex_[^\\]+\\app\\(?:ChatGPT|Codex)\.exe$", RegexOptions.IgnoreCase)) continue;
+                    if (String.Equals(originalTarget, target, StringComparison.OrdinalIgnoreCase) && Get(link, "Arguments").StartsWith("--app-args", StringComparison.Ordinal)) {
+                        string backupName;
+                        if (rows.TryGetValue(file, out backupName) && Regex.IsMatch(backupName, @"^[0-9a-f]{64}\.lnk$") && File.Exists(Path.Combine(StateRoot, backupName))) {
+                            object original = Open(shell, Path.Combine(StateRoot, backupName));
+                            try { Set(link, "IconLocation", NativeIcon(Get(original, "IconLocation"), Get(original, "TargetPath"))); }
+                            finally { Marshal.FinalReleaseComObject(original); }
+                        } else if (nativeTarget != null) {
+                            string currentIcon = Get(link, "IconLocation"), iconPath = currentIcon.Split(',')[0].Trim();
+                            if (iconPath.Length == 0 || String.Equals(iconPath, target, StringComparison.OrdinalIgnoreCase)) Set(link, "IconLocation", nativeTarget + ",0");
+                        }
+                        link.GetType().InvokeMember("Save", BindingFlags.InvokeMethod, null, link, null); continue;
+                    }
+                    if (!Native(originalTarget)) continue;
+                    nativeTarget = originalTarget;
                     if (Regex.IsMatch(Get(link, "Arguments"), @"--(?:remote-debugging|user-data-dir|inspect|codex-composer-hud)")) continue;
                     string backup = Key(file) + ".lnk";
                     if (!rows.ContainsKey(file)) { File.Copy(file, Path.Combine(StateRoot, backup), true); rows[file] = backup; }
                     string arguments = Get(link, "Arguments"), icon = Get(link, "IconLocation");
                     Set(link, "TargetPath", target); Set(link, "Arguments", "--app-args" + (arguments.Length > 0 ? " " + arguments : "")); Set(link, "WorkingDirectory", root);
-                    if (icon.Length == 0) Set(link, "IconLocation", originalTarget + ",0");
+                    Set(link, "IconLocation", NativeIcon(icon, originalTarget));
                     Set(link, "Description", "Codex 사용량 표시 자동 연결"); link.GetType().InvokeMember("Save", BindingFlags.InvokeMethod, null, link, null);
                 } finally { Marshal.FinalReleaseComObject(link); }
             }
             string desktop = Path.Combine(Folders[0], "Codex.lnk");
-            if (!File.Exists(desktop)) {
-                InstallSupport.Shortcut(desktop, target, root, "--app-args"); rows[desktop] = "created";
+            if (!File.Exists(desktop) && nativeTarget != null) {
+                InstallSupport.Shortcut(desktop, target, root, "--app-args");
+                object link = Open(shell, desktop);
+                try { Set(link, "IconLocation", nativeTarget + ",0"); link.GetType().InvokeMember("Save", BindingFlags.InvokeMethod, null, link, null); }
+                finally { Marshal.FinalReleaseComObject(link); }
+                rows[desktop] = "created";
             }
         } finally { Marshal.FinalReleaseComObject(shell); }
         List<string> lines = new List<string>(); foreach (KeyValuePair<string,string> row in rows) lines.Add(Encode(row.Key) + "\t" + row.Value);
