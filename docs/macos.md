@@ -33,3 +33,9 @@ python3 scripts/build_macos.py
 ```
 
 `dist/`에 ARM64 앱 ZIP과 설치 PKG, SHA-256이 생성됩니다. 빌드와 런타임 검증은 GitHub Actions의 macOS ARM64 환경에서 수행합니다.
+
+## 자동 연결
+
+설치 또는 첫 실행은 개인 LaunchAgent를 등록하고 현재 Dock의 공식 Codex 항목을 연결합니다. 원본 Dock 항목은 백업합니다. 로그인 시 앱을 혼자 열지 않고 대기합니다. 직접 공식 앱 파일을 열면 연결되지 않을 수 있습니다.
+
+메뉴의 **자동 연결 끄기**를 먼저 사용한 뒤 앱을 제거하면 LaunchAgent를 제거하고 연결된 Dock 항목을 복원합니다.

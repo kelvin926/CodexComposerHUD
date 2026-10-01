@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+app="${3%/}/Applications/CodexComposerHUD.app"
+uid=$(/usr/bin/stat -f %u /dev/console)
+user=$(/usr/bin/stat -f %Su /dev/console)
+if [ "$uid" -ne 0 ] && [ "$user" != loginwindow ] && [ -x "$app/Contents/MacOS/CodexComposerHUD" ]; then
+  /bin/launchctl asuser "$uid" /usr/bin/sudo -H -u "$user" "$app/Contents/MacOS/CodexComposerHUD" --install-auto
+fi
+exit 0

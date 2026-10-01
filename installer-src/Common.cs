@@ -10,7 +10,7 @@ using Microsoft.Win32;
 
 internal static class InstallSupport {
     internal const string Product = "CodexComposerHUD";
-    internal const string Version = "1.5.1";
+    internal const string Version = "1.6.0";
     internal const string Identity = "codex-composer-hud-4ca0723b-953c-4914-b48c-bb97ad3f0474";
     internal const string RegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexComposerHUD";
     internal static string Root { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", Product); } }
@@ -47,7 +47,7 @@ internal static class InstallSupport {
             }
         } catch (TimeoutException) {} catch (IOException) {}
     }
-    internal static void Shortcut(string link, string target, string root) {
+    internal static void Shortcut(string link, string target, string root, string arguments = "") {
         Directory.CreateDirectory(Path.GetDirectoryName(link));
         Type shellType = Type.GetTypeFromProgID("WScript.Shell"); object shell = Activator.CreateInstance(shellType), shortcut = null;
         try {
@@ -55,6 +55,7 @@ internal static class InstallSupport {
             Type type = shortcut.GetType();
             type.InvokeMember("TargetPath", BindingFlags.SetProperty, null, shortcut, new object[] { target });
             type.InvokeMember("WorkingDirectory", BindingFlags.SetProperty, null, shortcut, new object[] { root });
+            type.InvokeMember("Arguments", BindingFlags.SetProperty, null, shortcut, new object[] { arguments });
             type.InvokeMember("IconLocation", BindingFlags.SetProperty, null, shortcut, new object[] { Path.Combine(root, "Codex Composer HUD.exe") + ",0" });
             type.InvokeMember("Description", BindingFlags.SetProperty, null, shortcut, new object[] { "Codex 입력창 사용량 표시" });
             type.InvokeMember("Save", BindingFlags.InvokeMethod, null, shortcut, null);

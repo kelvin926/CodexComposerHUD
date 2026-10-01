@@ -1,8 +1,8 @@
 (() => {
   'use strict';
-  if (window.__codexComposerHUD?.version === '1.5.1') { window.__codexComposerHUD.remount(); return 'already-mounted'; }
+  if (window.__codexComposerHUD?.version === '1.6.0') { window.__codexComposerHUD.remount(); return 'already-mounted'; }
   window.__codexComposerHUD?.dispose();
-  const VERSION = '1.5.1';
+  const VERSION = '1.6.0';
   const hosts = new Map(), pending = new Map(), threads = new Map(), quotas = new Map(), quotaRequests = new Map();
   const configs = new Map();
   const metrics = window.__codexHUDMetrics;

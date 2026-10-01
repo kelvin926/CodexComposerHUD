@@ -11,10 +11,10 @@ Ubuntu 24.04 데스크톱용 사용량 표시기입니다. 공식 Linux ChatGPT 
 ## 설치와 실행
 
 ```bash
-sudo apt install ./codex-composer-hud_1.5.1-1_amd64.deb
+sudo apt install ./codex-composer-hud_1.6.0-1_amd64.deb
 ```
 
-ARM64 컴퓨터는 파일명만 `codex-composer-hud_1.5.1-1_arm64.deb`로 바꿉니다. 앱 메뉴에서 **Codex Composer HUD**를 실행합니다. 터미널에서는 다음을 사용합니다.
+ARM64 컴퓨터는 파일명만 `codex-composer-hud_1.6.0-1_arm64.deb`로 바꿉니다. 앱 메뉴에서 **Codex Composer HUD**를 실행합니다. 터미널에서는 다음을 사용합니다.
 
 ```bash
 codex-composer-hud
@@ -49,10 +49,20 @@ codex-composer-hud --stop
 sudo apt remove codex-composer-hud
 ```
 
-패키지 제거와 업그레이드는 이 표시기만 종료하며 공식 앱과 세션 기록은 유지합니다. 사용자 상태와 대화 내용 없는 로그는 `${XDG_STATE_HOME:-~/.local/state}/CodexComposerHUD`에 남습니다. 자동 시작 등록이나 로그인 정보 수정은 하지 않습니다.
+패키지 제거와 업그레이드는 이 표시기만 종료하며 공식 앱과 세션 기록은 유지합니다. 사용자 상태와 대화 내용 없는 로그는 `${XDG_STATE_HOME:-~/.local/state}/CodexComposerHUD`에 남습니다. 자동 연결은 개인 앱 메뉴와 로그인 대기 항목을 등록하며 로그인 정보는 수정하지 않습니다.
 
 ## 검증 범위
 
 Ubuntu 24.04 amd64 컨테이너에서 패키지 설치와 제거, 런타임, 20개 테스트를 확인했습니다. ARM64는 패키지 구조와 런타임 실행을 확인했습니다. 실제 Ubuntu 데스크톱에서 로그인한 공식 앱에 UI를 주입하는 전체 과정은 검증하지 못했습니다. 공식 앱의 내부 DOM과 메시지 형식에 의존하므로 Linux 프리뷰 업데이트 후에는 조정이 필요할 수 있습니다.
 
 공식 Linux 배포본 26.928.31416의 화면용 번들을 확인했습니다. 입력창과 사이드바 탐색 속성은 Windows판과 같지만, 실제 로그인 화면의 배치까지 검증한 것은 아닙니다.
+
+## 자동 연결
+
+첫 실행 또는 로그인에서 기존 `chatgpt` 앱 메뉴의 개인 사본을 연결 실행기로 바꾸고 원본을 백업합니다. 다음부터 평소 앱 메뉴로 실행하면 붙습니다. 로그인 시에는 앱을 열지 않고 대기합니다.
+
+```bash
+codex-composer-hud --disable-auto
+```
+
+명령으로 자동 연결을 끄면 계속 표시기에 연결된 항목을 복원합니다. 제거 전 이 명령을 실행하세요.

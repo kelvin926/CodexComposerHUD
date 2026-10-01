@@ -72,9 +72,10 @@ def build(architecture, node_arch):
     for name, destination, mode in [
         ('codex-composer-hud', './usr/bin/codex-composer-hud', 0o755),
         ('codex-composer-hud.desktop', './usr/share/applications/codex-composer-hud.desktop', 0o644),
-        ('codex-composer-hud.svg', './usr/share/icons/hicolor/scalable/apps/codex-composer-hud.svg', 0o644),
     ]:
         entries.append((destination, normalized(packaging / name), mode))
+    entries.append(('./usr/share/icons/hicolor/512x512/apps/codex-composer-hud.png',(ROOT/'assets/app-icon-linux.png').read_bytes(),0o644))
+    entries.append(('./etc/xdg/autostart/codex-composer-hud.desktop',b'[Desktop Entry]\nType=Application\nName=Codex Composer HUD automatic connection\nExec=/usr/bin/codex-composer-hud --watch --quiet\nTerminal=false\nX-GNOME-Autostart-enabled=true\n',0o644))
     size = sum(len(data) for _, data, _ in entries) // 1024
     control = f'''Package: codex-composer-hud
 Version: {VERSION}

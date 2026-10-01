@@ -7,8 +7,8 @@ using System.Windows.Forms;
 using Microsoft.Win32;
 
 [assembly: AssemblyTitle("Codex Composer HUD Uninstall")]
-[assembly: AssemblyVersion("1.5.1.0")]
-[assembly: AssemblyFileVersion("1.5.1.0")]
+[assembly: AssemblyVersion("1.6.0.0")]
+[assembly: AssemblyFileVersion("1.6.0.0")]
 
 internal static class Uninstall {
     [STAThread]
@@ -23,13 +23,13 @@ internal static class Uninstall {
                 string helper = Path.Combine(temporary, "Uninstall.exe"); File.Copy(Application.ExecutablePath, helper);
                 Process.Start(new ProcessStartInfo(helper, "--perform" + (silent ? " --silent" : "")) { UseShellExecute = false, CreateNoWindow = silent }); return 0;
             }
-            string[] manifest = ValidateManifest(root); InstallSupport.StopHud();
+            string[] manifest = ValidateManifest(root); AutoLaunch.Disable(root); InstallSupport.StopHud();
             foreach (string relative in manifest) {
                 string file = InstallSupport.ResolveFile(root, relative);
                 for (int attempt = 0; File.Exists(file); attempt++) { try { File.Delete(file); } catch (IOException) { if (attempt >= 20) throw; System.Threading.Thread.Sleep(250); } }
             }
             InstallSupport.DeleteOwnedShortcut(InstallSupport.DesktopLink, root);
-            foreach (string name in new[] { "Codex Composer HUD.lnk", "표시기 종료.lnk", "프로그램 제거.lnk" }) InstallSupport.DeleteOwnedShortcut(Path.Combine(InstallSupport.Menu, name), root);
+            foreach (string name in new[] { "Codex Composer HUD.lnk", "표시기 종료.lnk", "프로그램 제거.lnk", "자동 연결 끄기.lnk" }) InstallSupport.DeleteOwnedShortcut(Path.Combine(InstallSupport.Menu, name), root);
             if (Directory.Exists(InstallSupport.Menu) && Directory.GetFileSystemEntries(InstallSupport.Menu).Length == 0) Directory.Delete(InstallSupport.Menu);
             using (RegistryKey key = Registry.CurrentUser.OpenSubKey(InstallSupport.RegistryPath)) {
                 if (key != null && String.Equals(Convert.ToString(key.GetValue("InstallLocation")), root, StringComparison.OrdinalIgnoreCase)) { key.Close(); Registry.CurrentUser.DeleteSubKeyTree(InstallSupport.RegistryPath, false); }
