@@ -8,13 +8,14 @@ import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { CDP } from './lib/cdp.mjs';
 import { SessionReader } from './lib/sessions.mjs';
-import { findGuiProcesses, locateApp, debugPort, ownsDebugPort } from './lib/linux-platform.mjs';
+const mac = process.platform === 'darwin';
+const { findGuiProcesses, locateApp, debugPort, ownsDebugPort } = await import(mac ? './lib/macos-platform.mjs' : './lib/linux-platform.mjs');
 
 const run = promisify(execFile), root = path.dirname(fileURLToPath(import.meta.url));
 const args = new Set(process.argv.slice(2)), argument = name => { const index = process.argv.indexOf(name); return index < 0 ? null : process.argv[index + 1]; };
-const stateRoot = path.join(process.env.XDG_STATE_HOME || path.join(os.homedir(), '.local', 'state'), 'CodexComposerHUD');
+const stateRoot = path.join(mac ? path.join(os.homedir(), 'Library', 'Application Support') : process.env.XDG_STATE_HOME || path.join(os.homedir(), '.local', 'state'), 'CodexComposerHUD');
 const runtimeBase = process.env.XDG_RUNTIME_DIR || path.join(stateRoot, 'run');
-const runtimeRoot = path.join(runtimeBase, 'codex-composer-hud');
+const runtimeRoot = mac ? path.join('/tmp', `codex-composer-hud-${process.getuid()}`) : path.join(runtimeBase, 'codex-composer-hud');
 const socketPath = path.join(runtimeRoot, 'control.sock');
 let port = argument('--attach') ? Number(argument('--attach')) : null;
 let stopped = false, server, socketIdentity, appTracked = false, exitCode = 0, failureMessage = null;
@@ -32,7 +33,8 @@ async function log(message) {
 }
 async function tell(message, error = false) {
   await log(message);
-  if (process.env.DISPLAY || process.env.WAYLAND_DISPLAY) await run('notify-send', ['--app-name=Codex Composer HUD', '--urgency=' + (error ? 'critical' : 'normal'), 'Codex Composer HUD', message], { timeout: 3000 }).catch(() => {});
+  if (mac) await run('/usr/bin/osascript', ['-e', 'on run argv\n display dialog (item 1 of argv) with title "Codex Composer HUD" buttons {"확인"} default button 1\nend run', message], { timeout: 60000 }).catch(() => {});
+  else if (process.env.DISPLAY || process.env.WAYLAND_DISPLAY) await run('notify-send', ['--app-name=Codex Composer HUD', '--urgency=' + (error ? 'critical' : 'normal'), 'Codex Composer HUD', message], { timeout: 3000 }).catch(() => {});
   else process.stderr.write(message + '\n');
 }
 async function state(value) { await fs.writeFile(path.join(stateRoot, 'status.json'), JSON.stringify({ ...value, pid: process.pid, updatedAt: new Date().toISOString() }, null, 2), { mode: 0o600 }); }
@@ -120,7 +122,7 @@ async function main() {
     console.log(JSON.stringify({ platform: process.platform, node: process.version, architecture: process.arch, executable, mainProcesses: rows.length, stateRoot, error })); return;
   }
   if (process.getuid() === 0) throw new Error('GUI 표시는 sudo 없이 일반 사용자 계정에서 실행하세요.');
-  if (!process.env.DISPLAY && !process.env.WAYLAND_DISPLAY && !port) throw new Error('Ubuntu 데스크톱에서 실행하세요. 기존 앱 연결은 --attach 포트를 사용합니다.');
+  if (!mac && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY && !port) throw new Error('Ubuntu 데스크톱에서 실행하세요. 기존 앱 연결은 --attach 포트를 사용합니다.');
   if (await control('ping')) { if (!args.has('--quiet')) await tell('사용량 표시기가 이미 실행 중입니다.'); return; }
   if (!await bindControl()) return;
   if (port) { if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid local debugging port'); await connectLoop(); return; }

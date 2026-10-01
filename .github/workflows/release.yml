@@ -40,15 +40,38 @@ jobs:
       - name: Build Windows installer
         run: python scripts/build_windows.py
       - name: Test with bundled runtime
-        run: '& "build/windows-stage/CodexComposerHUD/runtime/node.exe" --test tests/metrics.test.mjs tests/quota.test.mjs tests/sessions.test.mjs'
+        run: '& "build/windows-stage/CodexComposerHUD/runtime/node.exe" --test tests/metrics.test.mjs tests/quota.test.mjs tests/sessions.test.mjs tests/chat-quota.test.mjs tests/macos-platform.test.mjs'
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: windows-packages
           path: dist/*
           if-no-files-found: error
 
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Build Apple Silicon app and installer
+        run: |
+          test "$(uname -m)" = arm64
+          python3 scripts/build_macos.py
+      - name: Verify macOS ARM64 bundle and logic
+        run: |
+          program=build/macos-stage/CodexComposerHUD.app/Contents/Resources/hud
+          "$program/runtime/node" --version
+          "$program/runtime/node" --test tests/metrics.test.mjs tests/quota.test.mjs tests/sessions.test.mjs tests/chat-quota.test.mjs tests/macos-platform.test.mjs
+          "$program/runtime/node" "$program/launcher-macos.mjs" --diagnose
+          build/macos-stage/CodexComposerHUD.app/Contents/MacOS/CodexComposerHUD --check-bundle
+          codesign --verify --deep --strict build/macos-stage/CodexComposerHUD.app
+          pkgutil --payload-files dist/CodexComposerHUD-macOS-arm64.pkg
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: macos-arm64-packages
+          path: dist/*
+          if-no-files-found: error
+
   publish:
-    needs: [linux, windows]
+    needs: [linux, windows, macos]
     runs-on: ubuntu-24.04
     permissions:
       contents: write

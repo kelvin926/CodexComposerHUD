@@ -1,8 +1,8 @@
 (() => {
   'use strict';
-  if (window.__codexComposerHUD?.version === '1.4.0') { window.__codexComposerHUD.remount(); return 'already-mounted'; }
+  if (window.__codexComposerHUD?.version === '1.5.0') { window.__codexComposerHUD.remount(); return 'already-mounted'; }
   window.__codexComposerHUD?.dispose();
-  const VERSION = '1.4.0';
+  const VERSION = '1.5.0';
   const hosts = new Map(), pending = new Map(), threads = new Map(), quotas = new Map(), quotaRequests = new Map();
   const configs = new Map();
   const metrics = window.__codexHUDMetrics;
@@ -16,9 +16,26 @@
   function active(editor) {
     const row = document.querySelector('[data-app-action-sidebar-thread-active="true"]');
     const explicit = editor.closest('[data-conversation-id]')?.getAttribute('data-conversation-id');
-    const id = explicit || row?.getAttribute('data-app-action-sidebar-thread-id');
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const native = value => uuid.test(value?.conversationId || '') && typeof value?.hostId === 'string' ? {threadId:value.conversationId,hostId:value.hostId} : null;
+    // Retained chat panes and a collapsed sidebar still have their own React view identity.
+    for (let node = editor; node; node = node.parentElement) {
+      const fiberName = Object.keys(node).find(name => name.startsWith('__reactFiber$'));
+      if (!fiberName) continue;
+      let fiber = node[fiberName], top = fiber;
+      while (top?.return) top = top.return;
+      if (top?.stateNode?.current && top.stateNode.current !== top) fiber = fiber.alternate || fiber;
+      for (let depth = 0; fiber && depth < 180; fiber = fiber.return, depth++) {
+        const ref = native(fiber.memoizedProps);
+        if (ref) return ref;
+      }
+      break;
+    }
+    const hostId = row?.getAttribute('data-app-action-sidebar-thread-host-id') || 'local';
+    let id = explicit || row?.getAttribute('data-app-action-sidebar-thread-id');
+    if (id?.startsWith(hostId + ':')) id = id.slice(hostId.length + 1);
     const threadId = id?.replace(/^local:/, '').replace(/^urn:uuid:/, '');
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(threadId || '') ? { threadId, hostId: row?.getAttribute('data-app-action-sidebar-thread-host-id') || 'local' } : null;
+    return uuid.test(threadId || '') ? { threadId, hostId } : null;
   }
   function request(method, params, hostId = 'local') {
     if (!window.electronBridge?.sendMessageFromView) return Promise.reject(new Error('앱 데이터 연결을 사용할 수 없습니다.'));
@@ -74,6 +91,8 @@
     threads.set(key(selected), state);
     state.quotaHistory = snapshot.quotaHistory;
     state.quotaHistoryError = snapshot.quotaHistoryError;
+    state.chatQuota = snapshot.chatQuota;
+    state.chatQuotaError = snapshot.chatQuotaError;
     sessionError = snapshot.error && !state.usage ? snapshot.error : null;
     updatedAt = new Date().toISOString(); render();
   }
@@ -227,22 +246,23 @@
   }
   function sessionForecastHTML(state, weekly, item) {
     if (!selected) return '';
-    const forecast = metrics?.quotaForecast(state?.quotaHistory, weekly);
-    const hasRecord = Number.isFinite(forecast?.used);
-    const hasRate = !quotaError && Number.isFinite(forecast?.rate);
-    const observed = hasRecord ? `${forecast.used.toFixed(2)}%p` : '기록 확인 중';
+    const chatQuota = state?.chatQuota;
+    const forecast = metrics?.quotaForecast({buckets:{[weekly?.bucketId || 'codex']:{points:chatQuota?.points || []}}}, weekly);
+    const hasRecord = Number.isFinite(chatQuota?.used);
+    const hasRate = hasRecord && !quotaError && Number.isFinite(forecast?.rate);
+    const observed = hasRecord ? `약 ${chatQuota.used.toFixed(2)}%` : '미제공';
     const rate = hasRate ? `약 ${forecast.rate.toFixed(2)}%p /시간` : '표본 부족';
     const afterHour = hasRate ? `약 ${forecast.remainingAfterHour.toFixed(1)}%` : '—';
     const exhaust = !hasRate ? '아직 계산할 수 없습니다' : forecast.resetsFirst ? '주간 초기화가 먼저' : `${new Date(forecast.exhaustsAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}경`;
-    const basis = forecast?.basis === 'recent' ? `최근 ${Math.round(forecast.rateSpanMs / 60000)}분 작업 기준` : '세션 작업 평균';
-    const note = state?.quotaHistoryError || (forecast?.reason === 'history-unavailable' ? '이 세션의 주간 한도 기록이 없습니다.' : forecast?.reason === 'cycle-changed' ? '한도 초기화 후 기록을 다시 확인합니다.' : !hasRate ? '5분 이상 작업과 한도 변화가 관측되면 추정합니다.' : `${basis}. 쉬었던 시간은 제외합니다.`);
-    const relative = hasRecord && Number.isFinite(forecast.shareOfInitial) ? `<div class="note">관측 시작 잔여의 ${forecast.shareOfInitial.toFixed(1)}% 사용${forecast.restarted ? ' / 초기화 이후 기준' : ''}</div>` : '';
+    const basis = forecast?.basis === 'recent' ? `최근 ${Math.round(forecast.rateSpanMs / 60000)}분 작업 기준` : '채팅 작업 평균';
+    const note = state?.chatQuotaError || (forecast?.reason === 'history-unavailable' ? '비교할 요청 기록이 없습니다. 클라우드나 다른 기기의 과거 기록은 포함되지 않을 수 있습니다.' : forecast?.reason === 'cycle-changed' ? '한도 초기화 후 기록을 다시 확인합니다.' : !hasRate ? '5분 이상 작업과 배분된 한도 변화가 있어야 속도를 추정합니다.' : `${basis}. 쉬었던 시간은 제외합니다.`);
+    const coverage = chatQuota ? `<div class="note">확인한 ${chatQuota.chats}개 채팅에 약 ${chatQuota.allocated.toFixed(2)}% 배분 / 미분류 ${chatQuota.unclassified.toFixed(2)}%</div>` : '';
     const until = hasRate && !forecast.resetsFirst ? `<div class="note">같은 소모 속도를 유지하면 약 ${duration(forecast.exhaustsAt - Date.now())} 후</div>` : '';
     const credits = state?.quotaHistory?.credits;
     const creditAmount = !Number.isFinite(credits?.estimated) ? '미제공' : credits.missingRecords ? `≥ ${credits.estimated.toFixed(1)} credits` : credits.estimatedHigh > credits.estimated + .01 ? `약 ${credits.estimated.toFixed(1)}–${credits.estimatedHigh.toFixed(1)} credits` : `약 ${credits.estimated.toFixed(1)} credits`;
-    const creditRows = `<div class="row"><span>이 세션 credit 환산</span><span>${creditAmount}</span></div><div class="row"><span>잔액 차감 / 관측</span><span>${Number.isFinite(credits?.observedDebit) ? credits.observedDebit.toLocaleString('ko-KR', {maximumFractionDigits:2}) + ' credits' : '미제공'}</span></div>`;
+    const creditRows = `<div class="row"><span>이 채팅 누적 credit 환산</span><span>${creditAmount}</span></div><div class="row"><span>계정 잔액 차감 / 관측</span><span>${Number.isFinite(credits?.observedDebit) ? credits.observedDebit.toLocaleString('ko-KR', {maximumFractionDigits:2}) + ' credits' : '미제공'}</span></div>`;
     const creditNote = credits?.unknownTier ? '속도 기록이 없어 지원 속도의 요율 범위로 환산합니다.' : '요청별 모델과 속도 기록으로 credit을 환산합니다.';
-    return `<details class="section fold" data-hud-fold="session"${item.folds.get('session') ? ' open' : ''}><summary><span class="fold-title">세션 소모 추정</span><span class="fold-value">관측 ${observed}</span></summary><div class="fold-body"><div class="row"><span>관측된 소모</span><span>${observed}</span></div>${relative}<div class="row"><span>계속 작업 시 소모</span><span>${rate}</span></div><div class="row"><span>1시간 후 주간 잔여</span><span>${afterHour}</span></div><div class="row"><span>주간 예상 고갈</span><span>${escape(exhaust)}</span></div>${until}${creditRows}<details class="notes" data-hud-fold="session-notes"${item.folds.get('session-notes') ? ' open' : ''}><summary>산정 기준과 참고</summary><p class="note">${escape(note)}<br>한도와 잔액은 계정 공유 값이며 다른 세션의 사용이 포함될 수 있습니다.<br>${creditNote} 환산량과 실제 차감량은 다릅니다.</p></details></div></details>`;
+    return `<details class="section fold" data-hud-fold="session"${item.folds.get('session') ? ' open' : ''}><summary><span class="fold-title">이 채팅 주간 소모 추정</span><span class="fold-value">${observed}</span></summary><div class="fold-body"><div class="row"><span>주간 전체 한도에서 사용</span><span>${observed}</span></div>${coverage}<div class="row"><span>이 채팅 계속 작업 시</span><span>${rate}</span></div><div class="row"><span>1시간 후 계정 주간 잔여</span><span>${afterHour}</span></div><div class="row"><span>주간 예상 고갈</span><span>${escape(exhaust)}</span></div>${until}${creditRows}<details class="notes" data-hud-fold="session-notes"${item.folds.get('session-notes') ? ' open' : ''}><summary>산정 기준과 참고</summary><p class="note">${escape(note)}<br>관측된 계정 한도 증가량을 채팅별 요청의 credit 환산 비중으로 배분한 추정값입니다. 실제 한도 계산식은 제공되지 않습니다.<br>첫 기록 이전, 다른 기기, 기록이 없는 요청의 사용은 미분류로 남깁니다. 계정 잔액 차감은 공유 값입니다.<br>${creditNote} 누적 credit은 주간 소모와 기간이 다를 수 있습니다.</p></details></div></details>`;
   }
   function render() {
     const state = threads.get(key(selected)); const usage = state?.usage;
