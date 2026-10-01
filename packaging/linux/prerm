@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+case "${1:-}" in
+  remove|upgrade|deconfigure)
+    for proc in /proc/[0-9]*; do
+      [ -r "$proc/cmdline" ] || continue
+      binary=$(readlink "$proc/exe" 2>/dev/null || true)
+      [ "$binary" = '/opt/codex-composer-hud/runtime/node' ] || continue
+      if tr '\000' '\n' < "$proc/cmdline" | grep -Fxq '/opt/codex-composer-hud/launcher-linux.mjs'; then
+        kill -TERM "${proc##*/}" 2>/dev/null || true
+      fi
+    done
+    ;;
+esac
+exit 0

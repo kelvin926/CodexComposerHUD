@@ -1,0 +1,74 @@
+name: Build and release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Build Ubuntu packages
+        run: python3 scripts/build_linux.py
+      - name: Test with bundled runtime and verify package
+        run: |
+          build/runtime-x64/node --test tests/*.test.mjs
+          sudo dpkg --install dist/*_amd64.deb
+          /opt/codex-composer-hud/runtime/node --version
+          codex-composer-hud --diagnose
+          sudo dpkg --remove codex-composer-hud
+          dpkg-deb --info dist/*_arm64.deb
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ubuntu-packages
+          path: dist/*
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Build Windows installer
+        run: python scripts/build_windows.py
+      - name: Test with bundled runtime
+        run: '& "build/windows-stage/CodexComposerHUD/runtime/node.exe" --test tests/metrics.test.mjs tests/quota.test.mjs tests/sessions.test.mjs'
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: windows-packages
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    needs: [linux, windows]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish versioned release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v$(python3 -c 'import json; print(json.load(open("package.json"))["version"])')"
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "Release $tag already exists; keeping its assets."
+            exit 0
+          fi
+          cd dist
+          sha256sum --check *.sha256
+          cd ..
+          gh release create "$tag" dist/* --target "$GITHUB_SHA" \
+            --title "Codex Composer HUD $tag" --notes-file RELEASE_NOTES.md

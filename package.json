@@ -1,0 +1,9 @@
+{
+  "name": "codex-composer-hud",
+  "version": "1.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Unofficial context, quota and credit HUD inside the Codex desktop composer",
+  "engines": { "node": ">=22" },
+  "scripts": { "test": "node --test tests/*.test.mjs", "start": "node scripts/start.mjs" }
+}

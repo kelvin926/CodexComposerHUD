@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Codex Composer HUD
+Comment=Codex 입력창의 컨텍스트, 한도, credit 및 소모 추정
+Exec=codex-composer-hud
+Icon=codex-composer-hud
+Terminal=false
+Categories=Development;Utility;
+Actions=Stop;
+
+[Desktop Action Stop]
+Name=표시기 종료
+Exec=codex-composer-hud --stop
