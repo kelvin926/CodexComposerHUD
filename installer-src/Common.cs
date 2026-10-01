@@ -10,7 +10,7 @@ using Microsoft.Win32;
 
 internal static class InstallSupport {
     internal const string Product = "CodexComposerHUD";
-    internal const string Version = "1.6.0";
+    internal const string Version = "1.6.1";
     internal const string Identity = "codex-composer-hud-4ca0723b-953c-4914-b48c-bb97ad3f0474";
     internal const string RegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexComposerHUD";
     internal static string Root { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", Product); } }

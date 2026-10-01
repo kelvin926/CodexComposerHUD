@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 [assembly: AssemblyTitle("Codex Composer HUD Setup")]
-[assembly: AssemblyVersion("1.6.0.0")]
-[assembly: AssemblyFileVersion("1.6.0.0")]
+[assembly: AssemblyVersion("1.6.1.0")]
+[assembly: AssemblyFileVersion("1.6.1.0")]
 
 internal static class Setup {
     [STAThread]
@@ -78,7 +78,7 @@ internal sealed class SetupForm : Form {
         desktop.Text = "바탕화면에 실행 아이콘 만들기"; desktop.Checked = true; desktop.Location = new Point(25, 171); desktop.AutoSize = true; Controls.Add(desktop);
         launch.Text = "설치 후 표시기 실행"; launch.Checked = true; launch.Location = new Point(25, 198); launch.AutoSize = true; Controls.Add(launch);
         automatic.Text = "Codex 자동 연결 (바로가기 연결 및 로그인 시 대기)"; automatic.Checked = true; automatic.Location = new Point(25, 225); automatic.AutoSize = true; Controls.Add(automatic);
-        status.Text = "v1.6.0 / 현재 사용자에게 설치"; status.Location = new Point(25, 279); status.Size = new Size(480, 22); Controls.Add(status);
+        status.Text = "v1.6.1 / 현재 사용자에게 설치"; status.Location = new Point(25, 279); status.Size = new Size(480, 22); Controls.Add(status);
         progress.Location = new Point(25, 304); progress.Size = new Size(480, 9); Controls.Add(progress);
         install.Text = "설치"; install.Location = new Point(333, 338); install.Size = new Size(80, 30); Controls.Add(install);
         cancel.Text = "닫기"; cancel.Location = new Point(425, 338); cancel.Size = new Size(80, 30); cancel.Click += (s, e) => Close(); Controls.Add(cancel);

@@ -1,8 +1,8 @@
 (() => {
   'use strict';
-  if (window.__codexComposerHUD?.version === '1.6.0') { window.__codexComposerHUD.remount(); return 'already-mounted'; }
+  if (window.__codexComposerHUD?.version === '1.6.1') { window.__codexComposerHUD.remount(); return 'already-mounted'; }
   window.__codexComposerHUD?.dispose();
-  const VERSION = '1.6.0';
+  const VERSION = '1.6.1';
   const hosts = new Map(), pending = new Map(), threads = new Map(), quotas = new Map(), quotaRequests = new Map();
   const configs = new Map();
   const metrics = window.__codexHUDMetrics;
@@ -317,8 +317,16 @@
       const actionRow = gridCell?.querySelector(':scope > .flex') || gridCell;
       const toolbar = actionRow?.querySelector(':scope > .flex-1') || actionRow;
       if (!toolbar || toolbar.contains(editor)) continue;
-      let host = Array.from(hosts.keys()).find(node => node.parentElement === toolbar);
-      if (!host) makeHost(toolbar);
+      // Native responsive controls can change the toolbar while keeping this footer.
+      let host = Array.from(hosts.keys()).find(node => node.closest('[data-composer-footer-responsive]') === footer);
+      if (!host) host = makeHost(toolbar).host;
+      else if (host.parentElement !== toolbar) toolbar.prepend(host);
+      for (const duplicate of footer.querySelectorAll('[data-codex-composer-hud]')) {
+        if (duplicate === host || duplicate.closest('[data-composer-footer-responsive]') !== footer) continue;
+        const item = hosts.get(duplicate);
+        if (item) { close(item); item.resizeObserver.disconnect(); hosts.delete(duplicate); }
+        duplicate.remove();
+      }
       primary ||= editor;
     }
     const next = primary ? active(primary) : null;

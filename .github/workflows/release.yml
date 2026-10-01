@@ -40,7 +40,7 @@ jobs:
       - name: Build Windows installer
         run: python scripts/build_windows.py
       - name: Test with bundled runtime
-        run: '& "build/windows-stage/CodexComposerHUD/runtime/node.exe" --test tests/metrics.test.mjs tests/quota.test.mjs tests/sessions.test.mjs tests/chat-quota.test.mjs tests/macos-platform.test.mjs tests/companion.test.mjs tests/posix-auto.test.mjs'
+        run: '& "build/windows-stage/CodexComposerHUD/runtime/node.exe" --test tests/metrics.test.mjs tests/quota.test.mjs tests/sessions.test.mjs tests/chat-quota.test.mjs tests/macos-platform.test.mjs tests/companion.test.mjs tests/posix-auto.test.mjs tests/composer-mount.test.mjs'
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: windows-packages
@@ -59,7 +59,7 @@ jobs:
         run: |
           program=build/macos-stage/CodexComposerHUD.app/Contents/Resources/hud
           "$program/runtime/node" --version
-          "$program/runtime/node" --test tests/metrics.test.mjs tests/quota.test.mjs tests/sessions.test.mjs tests/chat-quota.test.mjs tests/macos-platform.test.mjs tests/companion.test.mjs tests/posix-auto.test.mjs
+          "$program/runtime/node" --test tests/metrics.test.mjs tests/quota.test.mjs tests/sessions.test.mjs tests/chat-quota.test.mjs tests/macos-platform.test.mjs tests/companion.test.mjs tests/posix-auto.test.mjs tests/composer-mount.test.mjs
           "$program/runtime/node" "$program/launcher-macos.mjs" --diagnose
           build/macos-stage/CodexComposerHUD.app/Contents/MacOS/CodexComposerHUD --check-bundle
           codesign --verify --deep --strict build/macos-stage/CodexComposerHUD.app

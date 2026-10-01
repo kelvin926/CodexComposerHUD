@@ -1,6 +1,6 @@
 {
   "name": "codex-composer-hud",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "private": true,
   "type": "module",
   "description": "Unofficial context, quota and credit HUD inside the Codex desktop composer",
