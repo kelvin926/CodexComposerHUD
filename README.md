@@ -12,8 +12,8 @@ OpenAI 공식 제품이나 공식 확장 기능이 아닙니다. 앱 파일을 �
 | --- | --- |
 | macOS 13.5+ Apple Silicon | `CodexComposerHUD-macOS-arm64.pkg` 또는 앱 ZIP |
 | Windows 10/11 x64 | `CodexComposerHUD-Setup.exe` 또는 `CodexComposerHUD.zip` |
-| Ubuntu 24.04 Intel/AMD | `codex-composer-hud_1.5.0-1_amd64.deb` |
-| Ubuntu 24.04 ARM64 | `codex-composer-hud_1.5.0-1_arm64.deb` |
+| Ubuntu 24.04 Intel/AMD | `codex-composer-hud_1.5.1-1_amd64.deb` |
+| Ubuntu 24.04 ARM64 | `codex-composer-hud_1.5.1-1_arm64.deb` |
 
 Node 런타임이 포함되어 별도 Node 설치가 필요하지 않습니다. SHA-256 파일도 함께 제공합니다. Windows 실행 파일은 서명되지 않았습니다.
 
@@ -24,7 +24,7 @@ Windows는 설치 파일을 실행하고 바탕화면 또는 시작 메뉴의 **
 Ubuntu는 공식 ChatGPT Linux 앱을 먼저 설치하고 로그인한 뒤 다음 명령을 사용합니다. ARM64 컴퓨터는 해당 파일명을 사용합니다.
 
 ```bash
-sudo apt install ./codex-composer-hud_1.5.0-1_amd64.deb
+sudo apt install ./codex-composer-hud_1.5.1-1_amd64.deb
 codex-composer-hud
 ```
 
